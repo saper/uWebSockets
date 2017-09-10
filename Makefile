@@ -18,6 +18,11 @@ installLinux:
 	if [ -d "/usr/lib64" ]; then cp libuWS.so /usr/lib64/; else cp libuWS.so /usr/lib/; fi
 	mkdir -p /usr/include/uWS
 	cp src/*.h /usr/include/uWS/
+.PHONY: installFreeBSD
+installFreeBSD:
+	install -m 444 libuWS.so /usr/local/lib/libuWS.so
+	mkdir -p /usr/local/include/uWS
+	cp src/*.h /usr/local/include/uWS/
 .PHONY: installDarwin
 installDarwin:
 	cp libuWS.dylib /usr/local/lib/
