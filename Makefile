@@ -4,6 +4,8 @@ CPP_OSX := -stdlib=libc++ -mmacosx-version-min=10.7 -undefined dynamic_lookup $(
 
 default:
 	make `(uname -s)`
+FreeBSD:
+	$(CXX) $(CPPFLAGS) -I/usr/local/include $(CFLAGS) -DHAVE_REUSEPORT $(CXXFLAGS) $(CPP_SHARED) -g -o libuWS.so
 Linux:
 	$(CXX) $(CPPFLAGS) $(CFLAGS) $(CPP_SHARED) -s -o libuWS.so
 Darwin:
@@ -27,4 +29,4 @@ clean:
 	rm -f libuWS.dylib
 .PHONY: tests
 tests:
-	$(CXX) $(CPP_OPENSSL_OSX) -std=c++11 -O3 tests/main.cpp -Isrc -o testsBin -lpthread -luWS -lssl -lcrypto -lz -luv
+	$(CXX) $(CPP_OPENSSL_OSX) -I/usr/local/include -std=c++11 -O3 -g tests/main.cpp -Isrc -o testsBin -lpthread -L. -luWS -lssl -lcrypto -lz -L/usr/local/lib -luv
