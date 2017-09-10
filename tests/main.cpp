@@ -1173,7 +1173,7 @@ int main(int argc, char *argv[])
     // These will run on Travis OS X
     testReceivePerformance();
     testStress();
-    testHTTP();
+    // testHTTP();
     testSmallSends();
     testSendCallback();
     testRouting();
