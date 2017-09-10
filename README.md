@@ -5,14 +5,14 @@
 
 * Autobahn tests [all pass](http://htmlpreview.github.io/?https://github.com/uWebSockets/uWebSockets/blob/master/misc/autobahn/index.html).
 * One million WebSockets require ~111mb of user space memory (104 bytes per WebSocket).
-* By far one of the fastest in both HTTP and WebSocket throughput (see table below).
+* Single-threaded throughput of up to 5 million HTTP req/sec or 20 million WebSocket echoes/sec.
 * Linux, OS X, Windows & [Node.js](http://github.com/uWebSockets/bindings) support.
 * Runs with raw epoll, libuv or ASIO (C++17-ready).
 * Valgrind & AddressSanitizer clean.
 * Permessage-deflate, SSL/TLS support & integrates with foreign HTTP(S) servers.
 * Multi-core friendly & optionally thread-safe via compiler flag UWS_THREADSAFE.
 
-[![](https://api.travis-ci.org/uWebSockets/uWebSockets.svg?branch=master)](https://travis-ci.org/uWebSockets/uWebSockets) [![](misc/images/patreon.png)](https://www.patreon.com/uWebSockets)
+[![](https://api.travis-ci.org/uWebSockets/uWebSockets.svg?branch=master)](https://travis-ci.org/uWebSockets/uWebSockets)
 
 ## Simple & modern
 The interface has been designed for simplicity and only requires you to write a few lines of code to get a working server:
@@ -30,14 +30,12 @@ int main() {
         res->end(const char *, size_t);
     });
 
-    h.listen(3000);
-    h.run();
+    if (h.listen(3000)) {
+        h.run();
+    }
 }
 ```
 Get the sources of the uws.chat server [here](https://github.com/uWebSockets/website/blob/master/main.cpp). Learn from the tests [here](tests/main.cpp).
-
-## Widely adopted
-<div align="center"><img src="misc/images/adoption.png"/></div>
 
 ## Not your average server
 µWS was designed to perform well across the board, not just in one specific dimension. With excellent memory usage paired with high throughput it outscales Socket.IO by 180x.
@@ -45,6 +43,9 @@ Get the sources of the uws.chat server [here](https://github.com/uWebSockets/web
 <div align="center"><img src="misc/images/overview.png"/></div>
 
 *Benchmarks are run with default settings in all libraries, except for `ws` which is run with the native performance addons. Read more about the benchmarks [here](benchmarks).*
+
+## Perfect for WebRTC
+Distributed WebRTC networks typically employ WebSockets for peer signalling. Since every single peer in the entire distributed network requires a persistent connection to the signalling server at all times, only a scalable WebSocket server will do.
 
 ## Getting started
 #### Dependencies

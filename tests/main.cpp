@@ -238,6 +238,18 @@ void testConnections() {
         case 7:
             std::cout << "Client emitted error on HTTP response without upgrade (SSL)" << std::endl;
             break;
+        case 10:
+            std::cout << "Client emitted error on poll error" << std::endl;
+            break;
+        case 11:
+            static int protocolErrorCount = 0;
+            protocolErrorCount++;
+            std::cout << "Client emitted error on invalid protocol" << std::endl;
+            if (protocolErrorCount > 1) {
+                std::cout << "FAILURE:  " << protocolErrorCount << " errors emitted for one connection!" << std::endl;
+                exit(-1);
+            }
+            break;
         default:
             std::cout << "FAILURE: " << user << " should not emit error!" << std::endl;
             exit(-1);
@@ -265,6 +277,7 @@ void testConnections() {
     });
 
     h.connect("invalid URI", (void *) 1);
+    h.connect("invalid://validButUnknown.yolo", (void *) 11);
     h.connect("ws://validButUnknown.yolo", (void *) 2);
     h.connect("ws://echo.websocket.org", (void *) 3, {}, 10);
     h.connect("ws://echo.websocket.org", (void *) 8);
@@ -272,6 +285,7 @@ void testConnections() {
     h.connect("wss://echo.websocket.org", (void *) 9);
     h.connect("ws://google.com", (void *) 6);
     h.connect("wss://google.com", (void *) 7);
+    h.connect("ws://127.0.0.1:6000", (void *) 10, {}, 60000);
 
     h.run();
     std::cout << "Falling through testConnections" << std::endl;
@@ -814,44 +828,48 @@ void testHTTP() {
         FILE *nc;
 
         // invalid data
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
+        if (nc < 0) {
+            std::cerr << "FAILURE: nc failed" << std::endl;
+            exit(-1);
+        }
         fputs("invalid http", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("\r\n\r\n", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("\r\n", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("\r\n\r", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("\r", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("\n", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("GET \r\n", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("GET / HTTP/1.1\r\n", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("GET / HTTP/1.1\r\nHost: localhost:3000", nc);
         pclose(nc);
 
         // segmented GET
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("GET /segme", nc);
         fflush(nc);
         usleep(100000);
@@ -870,7 +888,7 @@ void testHTTP() {
         pclose(nc);
 
         // segmented upgrade
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("GET /upgra", nc);
         fflush(nc);
         usleep(100000);
@@ -893,14 +911,14 @@ void testHTTP() {
         pclose(nc);
 
         // slow GET should get disconnected
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         sleep(3);
         fputs("GET /slowRequest HTTP/1.1\r\n\r\n", nc);
         pclose(nc);
 
         // post tests with increading data length
         for (int j = 0; j < 10; j++) {
-            nc = popen("nc localhost 3000 &> /dev/null", "w");
+            nc = popen("nc localhost 3000 2>/dev/null", "w");
             fputs("POST /postTest HTTP/1.1\r\nContent-Length: ", nc);
 
             int contentLength = j * 1000000;
@@ -917,28 +935,28 @@ void testHTTP() {
         // todo: two-in-one GET, two-in-one GET, upgrade, etc
 
         // segmented second GET
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("GET /packedTest HTTP/1.1\r\n\r\nGET /packedTest HTTP/", nc);
         fflush(nc);
         usleep(100000);
         fputs("1.1\r\n\r\n", nc);
         pclose(nc);
 
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("GET /packedTest HTTP/1.1\r\n\r\nGET /packedTest HTTP/1.1\r\n\r\n", nc);
         pclose(nc);
 
         // out of order responses
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("GET /firstRequest HTTP/1.1\r\n\r\nGET /secondRequest HTTP/1.1\r\n\r\n", nc);
         pclose(nc);
 
         // shutdown
-        nc = popen("nc localhost 3000 &> /dev/null", "w");
+        nc = popen("nc localhost 3000 2>/dev/null", "w");
         fputs("PUT /closeServer HTTP/1.1\r\n\r\n", nc);
         pclose(nc);
         if (expectedRequests != 18) {
-            std::cerr << "FAILURE: expectedRequests differ: " << expectedRequests << std::endl;
+            std::cerr << "FAILURE: requests outstanding: got " << expectedRequests << " expected 18" << std::endl;
             exit(-1);
         }
     });
@@ -1167,8 +1185,8 @@ int main(int argc, char *argv[])
     testConnections();
     testTransfers();
 
-    // Linux-only feature
-#ifdef __linux__
+    // UNIX TCP/IP stacks
+#if defined(__linux) || defined(__FreeBSD__)
     testReusePort();
 #endif
 
